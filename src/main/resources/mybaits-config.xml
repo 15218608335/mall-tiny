@@ -1,0 +1,5 @@
+<plugins>
+    <plugin interceptor="com.macro.mall.tiny.interceptor.SqlCostTimeInterceptor">
+        <property name="someProperty" value="199"/>
+    </plugin>
+</plugins>

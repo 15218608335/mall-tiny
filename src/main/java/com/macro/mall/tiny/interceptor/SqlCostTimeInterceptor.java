@@ -8,56 +8,45 @@ package com.macro.mall.tiny.interceptor;
  **/
 
 import lombok.extern.slf4j.Slf4j;
-import org.apache.ibatis.executor.statement.StatementHandler;
+import org.apache.ibatis.cache.CacheKey;
+import org.apache.ibatis.executor.Executor;
 import org.apache.ibatis.mapping.BoundSql;
 import org.apache.ibatis.mapping.MappedStatement;
-import org.apache.ibatis.plugin.Interceptor;
-import org.apache.ibatis.plugin.Intercepts;
-import org.apache.ibatis.plugin.Invocation;
-import org.apache.ibatis.plugin.Signature;
+import org.apache.ibatis.plugin.*;
 import org.apache.ibatis.session.ResultHandler;
 import org.apache.ibatis.session.RowBounds;
 
-import java.lang.reflect.InvocationTargetException;
+import java.sql.Statement;
 import java.util.Properties;
 
 // 定义拦截器  注解表明起作用的范围
 @Intercepts({
-        @Signature(type = StatementHandler.class, method = "query", args = {StatementHandler.class,MappedStatement.class, Object.class, RowBounds.class, ResultHandler.class}),
-        @Signature(type = StatementHandler.class, method = "update", args = {StatementHandler.class,MappedStatement.class, Object.class, RowBounds.class, ResultHandler.class}),
-        @Signature(type = StatementHandler.class, method = "batch", args = {StatementHandler.class,MappedStatement.class, Object.class, RowBounds.class, ResultHandler.class})
+        @Signature( type = Executor.class, method = "update",args = {MappedStatement.class, Object.class}),
+        @Signature(type = Executor.class, method = "query",args = {MappedStatement.class, Object.class, RowBounds.class, ResultHandler.class}),
+        @Signature(type = Executor.class, method = "query",args = {MappedStatement.class, Object.class, RowBounds.class, ResultHandler.class, CacheKey.class, BoundSql.class})
+
 })
 @Slf4j
 public class SqlCostTimeInterceptor implements Interceptor {
 
     @Override
     public Object intercept(Invocation invocation) throws Throwable {
-        long start = System.currentTimeMillis();
-        Object target = invocation.getTarget();
-        StatementHandler statementHandler = (StatementHandler) target;
-
-        try {
-           return invocation.proceed(); // 执行被拦截的方法
-        } catch (InvocationTargetException e) {
-            throw new RuntimeException(e);
-        } catch (IllegalAccessException e) {
-            throw new RuntimeException(e);
-        } finally {
-            long end = System.currentTimeMillis();
-            BoundSql boundSql = statementHandler.getBoundSql();
-            String sql = boundSql.getSql();
-            log.info("SQL: {}, 执行耗时: {} ms", sql, end - start);
-        }
-
+        Statement statement = (Statement) invocation.getArgs()[0];
+        System.out.println("-------------------------------");
+        System.out.println("sql:"+statement.toString().substring(statement.toString().indexOf(":")+1));
+        Object result =invocation.proceed();
+        System.out.println("-------------------------------");
+//        System.out.println("result:"+ JSONObject.toJSONString(result));
+        return result;
     }
 
     @Override
     public Object plugin(Object target) {
-        return Interceptor.super.plugin(target);
+        return Plugin.wrap(target, this);
     }
 
     @Override
     public void setProperties(Properties properties) {
-        Interceptor.super.setProperties(properties);
+
     }
 }
